@@ -17,7 +17,7 @@ REPLACE_SOUNDTRACK=0
 
 TEMP_DIR=`mktemp -d`
 
-source /opt/webcam/encoder.conf
+source $(dirname $0)/encoder.conf
 
 ######################################################################
 # command line inputs

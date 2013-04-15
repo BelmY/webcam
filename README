@@ -88,3 +88,8 @@ On ubuntu,
 10) Add the full_movie.sh script to run once per day, after the monthly movie is created.  for example:
 
 35 2  *   *   *     /opt/webcam/full_movie.sh -z640x480 -m "your_music_dir" -f 30 -q
+-----------------------------------------------------------------------------------------------------------------------
+This repository is licenced under please mention me licence. So if you're
+planning to use, reuse or even abuse it, do mention it's author. And please 
+add a comment to the relevant blog post on my blog http://itworks.hu, so I
+would keep up the effort.

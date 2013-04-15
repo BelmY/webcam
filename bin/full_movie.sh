@@ -9,7 +9,7 @@ FRAME_SIZE=640x480
 FONT_SIZE=12
 
 TEMP_DIR=`mktemp -d`
-source /opt/webcam/encoder.conf
+source $(dirname $0)/encoder.conf
 
 usage()
 {

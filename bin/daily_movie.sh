@@ -29,7 +29,7 @@ TEMP_DIR=`mktemp -d`
 PIP_RESIZE_PATH=${TEMP_DIR}/pip.jpg
 ANNOTATE=
 
-source /opt/webcam/encoder.conf
+source $(dirname $0)/encoder.conf
 ######################################################################
 # command line inputs
 ######################################################################
