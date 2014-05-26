@@ -6,7 +6,6 @@
 ######################################################################
 
 TARGET_DATE=0
-FRAMERATE=30
 DURATION=0
 VERBOSE=0
 MONTAGE_FRAME_COUNT=24
@@ -16,9 +15,6 @@ MONTAGE_HEIGHT=18
 MONTAGE_WHITESPACE=+0+0
 MONTAGE_MINIMUM=25
 FRAME_SIZE='1920x1080'
-PIP_SIZE='640x480'
-OFFSET='+792+477'
-SECOND_PIC_DIR=
 MAKE_MOVIE=0
 MAKE_MONTAGE=0
 UPDATE_INDEX=0
@@ -26,7 +22,6 @@ REPLACE_SOUNDTRACK=0
 MONTH_THUMB_WIDTH=256
 
 TEMP_DIR=`mktemp -d`
-PIP_RESIZE_PATH=${TEMP_DIR}/pip.jpg
 ANNOTATE=
 
 source $(dirname $0)/encoder.conf
@@ -54,11 +49,7 @@ OPTIONS:
            Defaults to $MONTAGE_MINIMUM
    -m      Set the music directory.  Defaults to $MUSIC_DIR
    -n      Number of frames to use in montage.  Defaults to $MONTAGE_FRAME_COUNT
-   -o      Offset for cropping.  Set to zero to scale instead of crop.  
-           Defaults to $OFFSET
-   -p      Second picture dimension.  Defaults to $PIP_SIZE.
    -q      Disable progress indication
-   -s      Second picture dir, for PIP.  Leave blank for none.  Defaults to blank.
    -t      Dimensions of each tapestry picture.  Defaults to $TAPESTRY_DIM
    -v      Verbose output and preserve the temp output
    -w      Set border between pictures in montage.  Defaults to $MONTAGE_WHITESPACE
@@ -84,10 +75,7 @@ do
         i)      MONTAGE_MINIMUM="$OPTARG";;
         m)      MUSIC_DIR="$OPTARG";;
 	n)      MONTAGE_FRAME_COUNT="$OPTARG";;
-	o)      OFFSET="$OPTARG";;
-	p)      PIP_SIZE="$OPTARG";;
         q)	PROGRESS=0;;
-	s)      SECOND_PIC_DIR="$OPTARG";;
 	t)      TAPESTRY_DIM="$OPTARG";;
         v)      VERBOSE=1;;
         w)      MONTAGE_WHITESPACE="$OPTARG";;
@@ -130,8 +118,6 @@ then
     exit 0
 fi
 
-PRETTY_DATE=`date -d $TARGET_DATE +%e\ %b\ %Y`
-PRETTY_MONTH=`date -d $TARGET_DATE +%b\ %Y`
 YEAR=`date -d $TARGET_DATE +%Y`
 MONTH=`date -d $TARGET_DATE +%m`
 DAY=`date -d $TARGET_DATE +%d`
@@ -143,7 +129,6 @@ MONTH_ABSOLUTE_DIR=${YEAR_ABSOLUTE_DIR}/${MONTH}
 MONTH_RELATIVE_DIR=${YEAR_RELATIVE_DIR}/${MONTH}
 
 DAY_ABSOLUTE_DIR=${MONTH_ABSOLUTE_DIR}/${DAY}
-PIP_ABSOLUTE_DIR=${WEB_ABSOLUTE_DIR}/${SECOND_PIC_DIR}/${YEAR}/${MONTH}/${DAY}
 DAY_RELATIVE_DIR=${MONTH_RELATIVE_DIR}/${DAY}
 MOVIE_NAME=${TARGET_DATE}
 MOVIE_LOW_NAME=${TARGET_DATE}_low
@@ -173,76 +158,40 @@ then
     SOURCE_DIMENSION=`identify -verbose ${RANDOM_FRAME} | awk '{ if (/Geometry:/) print gensub(/\+0\+0/, "", "g", $2) }'`
     LINKONLY=`expr "$FRAME_SIZE" == "${SOURCE_DIMENSION}"`
 
-    let "i = 0"
     if [ $PROGRESS -eq 1 ]; then
-        max=$(ls ${DAY_ABSOLUTE_DIR}/??:??:??.jpg|wc -l)
+        max=$(ls ${DAY_ABSOLUTE_DIR}/*.jpg|wc -l)
     fi
+    let "j = 0"
+    let "i = 0"
+    for file in `ls ${DAY_ABSOLUTE_DIR}/??:??:??_thumb.jpg`; do
+	output_path=${TEMP_DIR}/`printf %06d $j`_thumb.jpg
+	ln -s $file ${output_path}
+	let "j = $j + 1"
+	if [ $PROGRESS -eq 1 ]; then
+	    echo -ne "$(expr \( $j + $i \)) / $max $(expr \( \( $j + $i \) \* 100 \) / $max)%\r"
+	fi
+    done
     for file in `ls ${DAY_ABSOLUTE_DIR}/??:??:??.jpg`; do
 	output_path=${TEMP_DIR}/`printf %06d $i`.jpg
-        if [ -z "$OFFSET" ]; then
-	    FORMATED_DATE=`date -d "$(echo $TARGET_DATE|rev|cut -c-10|rev|tr '/' '-') $(echo $file|rev|cut -c5-12|rev)" "+%Y. %b %e. %H:%M"`
-            if [ "$LINKONLY" == 1 ]; then
-#                ln -s $file ${output_path}
-		CMD=`convert $file \
-		    -normalize \
-		    -gravity NorthWest \
-		    -font ${FONT} \
-		    -pointsize 12 \
-		    -fill gray -annotate +10+10 "${FORMATED_DATE}" \
-		    -fill gray -annotate +9+10 "${FORMATED_DATE}" \
-		    -fill gray -annotate +9+11 "${FORMATED_DATE}" \
-		    -fill black -annotate +11+9 "${FORMATED_DATE}" \
-		    -fill white -annotate +10+10 "${FORMATED_DATE}" \
-		    ${output_path}`
-		if [ $? != 0 ]
-		    then
-		    rm ${output_path}
-		    continue
-		fi
-            else
-              # error-handle.  If the incoming picture is bad, don't pass on a bad picture
-#	      CMD=`convert -scale ${FRAME_SIZE} $file ${output_path}`
-	      CMD=`convert -scale ${FRAME_SIZE} $file \
-		    -normalize \
-		    -gravity NorthWest \
-		    -font ${FONT} \
-		    -pointsize 12 \
-		    -fill gray -annotate +10+10 "${FORMATED_DATE}" \
-		    -fill gray -annotate +9+10 "${FORMATED_DATE}" \
-		    -fill gray -annotate +9+11 "${FORMATED_DATE}" \
-		    -fill black -annotate +11+9 "${FORMATED_DATE}" \
-		    -fill white -annotate +10+10 "${FORMATED_DATE}" \
-		    ${output_path}`
-	      if [ $? != 0 ]
-		  then
-		  rm ${output_path}
-		  continue
-	      fi
+        if [ "$LINKONLY" == 1 ]; then
+            ln -s $file ${output_path}
+	    if [ $? != 0 ]
+	        then
+	        rm ${output_path}
+	        continue
 	    fi
         else
-	    CMD=`convert -crop ${FRAME_SIZE}${OFFSET} $file ${output_path}`
+	    # error-handle.  If the incoming picture is bad, don't pass on a bad picture
+	    CMD=`convert -scale ${FRAME_SIZE} $file ${output_path}`
 	    if [ $? != 0 ]
 		then
 		rm ${output_path}
 		continue
 	    fi
-        fi
-        if [ -e "${PIP_ABSOLUTE_DIR}" ]
-        then
-            hour=${file:(-12):2}
-            minute=${file:(-9):2}
-            second=${file:(-6):2}
-            #assume closest match for the minute (not second) is good enough
-            pip=`ls ${PIP_ABSOLUTE_DIR}/${hour}:${minute}:??.*jpg | sort | tail -n 1`
-            if [ -e "$pip" ]
-            then
-                convert -scale ${PIP_SIZE} $pip ${PIP_RESIZE_PATH}
-                composite -gravity southeast ${PIP_RESIZE_PATH} ${output_path} ${output_path}
-            fi
-        fi
+	fi
 	let "i = $i + 1"
 	if [ $PROGRESS -eq 1 ]; then
-	    echo -ne "$i/$max $(expr \( $i \* 100 \) / $max)%\r"
+	    echo -ne "$(expr \( $j + $i \)) / $max $(expr \( \( $j + $i \) \* 100 \) / $max)%\r"
 	fi
     done
     if [ $PROGRESS -eq 1 ]; then
@@ -285,10 +234,15 @@ then
     # -fs maximum output file size
 
     # make the low-def version
-    $FFMPEG_PATH -loglevel ${FFMPEG_LOGLEVEL} -y -i $MOVIE_ABSOLUTE_PATH.mp4 -fs 5000k -s 320x240 -acodec copy \
-      ${FFMPEG_OUTPUT_OPTIONS_MP4_VID} $MOVIE_LOW_ABSOLUTE_PATH.mp4
-    $FFMPEG_PATH -loglevel ${FFMPEG_LOGLEVEL} -y -i $MOVIE_ABSOLUTE_PATH.ogv -fs 5000k -s 320x240 -acodec copy \
-      ${FFMPEG_OUTPUT_OPTIONS_OGV_VID} $MOVIE_LOW_ABSOLUTE_PATH.ogv
+#    $FFMPEG_PATH -loglevel ${FFMPEG_LOGLEVEL} -y -i $MOVIE_ABSOLUTE_PATH.mp4 -fs 5000k -s 320x240 -acodec copy \
+#      ${FFMPEG_OUTPUT_OPTIONS_MP4_VID} $MOVIE_LOW_ABSOLUTE_PATH.mp4
+#    $FFMPEG_PATH -loglevel ${FFMPEG_LOGLEVEL} -y -i $MOVIE_ABSOLUTE_PATH.ogv -fs 5000k -s 320x240 -acodec copy \
+#      ${FFMPEG_OUTPUT_OPTIONS_OGV_VID} $MOVIE_LOW_ABSOLUTE_PATH.ogv
+    # make thumbnail version
+    $FFMPEG_PATH -loglevel ${FFMPEG_LOGLEVEL} -y -r ${FRAMERATE} -qscale 3 -i ${TEMP_DIR}/%06d_thumb.jpg -i $FADE_PATH  \
+      -b 2000k ${FFMPEG_OUTPUT_OPTIONS_MP4_VID} ${FFMPEG_OUTPUT_OPTIONS_MP4_AUD} $MOVIE_LOW_ABSOLUTE_PATH.mp4
+    $FFMPEG_PATH -loglevel ${FFMPEG_LOGLEVEL} -y -r ${FRAMERATE} -qscale 3 -i ${TEMP_DIR}/%06d_thumb.jpg -i $FADE_PATH  \
+      -b 2000k ${FFMPEG_OUTPUT_OPTIONS_OGV_VID} ${FFMPEG_OUTPUT_OPTIONS_OGV_AUD} $MOVIE_LOW_ABSOLUTE_PATH.ogv
 fi
 
 if [ "$MAKE_MONTAGE" -eq 1 ]
@@ -348,6 +302,8 @@ then
     if [ -e "$STRIP_ABSOLUTE_PATH" ]
     then
 
+	PRETTY_DATE=`date -d $TARGET_DATE +%e\ %b\ %Y`
+	PRETTY_MONTH=`date -d $TARGET_DATE +%b\ %Y`
         #####################################################################
         # rebuild the movie thumbnail for the day
         #####################################################################

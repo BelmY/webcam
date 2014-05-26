@@ -30,7 +30,7 @@
 </a>
 <img class="preload" src="<?="${BASE_DIR}/${year}/${month}/${year}-${month}-${day}"?>_thumb_dated.jpg"/><br/>
            </div>
-           <?
+           <?php
            break;
          }
          $ptr++;
@@ -39,19 +39,6 @@
        
   </div>
   <div id="main">
-     <div class="candybox">
-       <div class="titlebar">
-         <span class="name">Webcam</span>
-         <span>Full</span>
-      </div>
-      <div>
-	<video controls="controls" width="640" height="480" autobuffer="autobuffer">
-	  <source src="<?="${BASE_DIR}"?>/full.mp4" type="video/mp4"/>
-	  <source src="<?="${BASE_DIR}"?>/full.ogv" type='video/ogg; codecs="theora, vorbis"'/>
-	</video>
-	</div>
-    </div>
-
     <?php
        $month_ptr = 0;
        // Find last image, search backward in dir structure until thumbnail is found
@@ -75,18 +62,30 @@
          <a class="button right" href="index_day.php?year=<?=date('Y', $ts)?>&month=<?=date('m', $ts)?>&day=<?=date('d', $ts)?>">pics</a>
       </div>
       <div>
-        <img src="<?=$current_day_pics[0]?>" alt="current picture">
+        <img src="<?=$current_day_pics[0]?>" alt="current picture" width="640">
       </div>
     </div>
-<?
-             break;
-           }
+<?php
+            break 2;
+            }
            $day_ptr++;
          }
          $month_ptr++;
        }
-out:    
 ?>
+     <div class="candybox">
+       <div class="titlebar">
+         <span class="name">Webcam</span>
+         <span>Full</span>
+      </div>
+      <div>
+	<video controls="controls" width="640" height="480" autobuffer="autobuffer">
+	  <source src="<?="${BASE_DIR}"?>/full.mp4" type="video/mp4"/>
+	  <source src="<?="${BASE_DIR}"?>/full.ogv" type='video/ogg; codecs="theora, vorbis"'/>
+	</video>
+	</div>
+    </div>
+
   </div>
   <div id="sidebar">
     <?php

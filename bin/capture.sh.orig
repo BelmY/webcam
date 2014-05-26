@@ -196,11 +196,14 @@ do
 
     if [ -n "${AVCONV_PATH}" ]
     then 
-	${AVCONV_PATH} -f video4linux2 -s 640x480 -i /dev/video0 -frames:v 1 "${TEMP_DIR}/${TEMP_FILE_NAME}"
-	if [ $? != 0 ]; then
-	    sudo /opt/webcam/resetusb.sh
-	    exit
+	${AVCONV_PATH} -rtsp_transport tcp -fflags discardcorrupt -f rtsp -i rtsp://192.168.1.5:554/mpeg4 -y -vf "select='eq(pict_type,I)'" -frames:v 1 -an -vsync 1 -qscale 1 -f image2 "${PIC_ABSOLUTE_PATH}"
+	${AVCONV_PATH} -rtsp_transport tcp -fflags discardcorrupt -f rtsp -i rtsp://192.168.1.5:554/mpeg4cif -y -vf "select='eq(pict_type,I)'" -frames:v 1 -an -vsync 1 -qscale 1 -f image2 "${THUMB_ABSOLUTE_PATH}"
+	if [ "$VERBOSE" == "0" ] 
+	then
+	    rm -rf $TEMP_DIR
 	fi
+	break
+	#${AVCONV_PATH} -f video4linux2 -s 640x480 -i /dev/video0 -frames:v 1 "${TEMP_DIR}/${TEMP_FILE_NAME}"
     fi
 
     if [ -n "${GPHOTO2_PATH}" ]

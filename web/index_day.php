@@ -20,18 +20,25 @@
   </div>
 </div>
 <div id="onecolumn">
+    <div style="display:table">
     <?php
     foreach(glob("${BASE_DIR}/${year}/${month}/${day}/*_thumb.jpg") as $index_filename) {
         $files[] = preg_replace('/(.*)_thumb.jpg/', '$1', $index_filename);
     } rsort($files);
 
     if ($files) {
-        foreach ($files as $name) {
-?>	<a href="<?=${name}?>.jpg"><img src="<?=${name}?>_thumb.jpg"/></a>
+        foreach ($files as $count=>$name) {
+?>
+<?php if($count%3==0):?><div style="display:table-row"><?endif?>
+	<div style="display:table-cell">
+	    <a href="<?=${name}?>.jpg"><img width="100%" src="<?=${name}?>_thumb.jpg"/></a>
+	</div>
+<?php if($count%3==2):?></div><?endif?>
 <?php
         }
     }
 ?>
+    </div>
 </div>
 <div id="header">
   <div class="titlebar">

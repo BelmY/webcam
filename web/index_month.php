@@ -33,7 +33,7 @@
 <?
     }
 ?>
-<video controls="controls" width="<?=$resolution?"320":"640"?>" height="<?=$resolution?"240":"480"?>">
+<video controls="controls" width="100%"?>">
   <source src="<?="${BASE_DIR}/${year}/${year}-${month}${resolution}"?>.mp4" type='video/mp4'/>
   <source src="<?="${BASE_DIR}/${year}/${year}-${month}${resolution}"?>.ogv" type='video/ogg'/>
 </video>

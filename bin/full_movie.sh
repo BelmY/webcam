@@ -3,12 +3,6 @@
 ######################################################################
 # Default values
 ######################################################################
-MUSIC_DIR="/data/music/Kulfoldi/Eric Serra/Le Grand Bleu (vol 1)"
-FRAMERATE=30
-FRAME_SIZE=640x480
-FONT_SIZE=12
-
-TEMP_DIR=`mktemp -d`
 source $(dirname $0)/encoder.conf
 
 usage()
@@ -45,54 +39,59 @@ while getopts b:f:hm:qvx:z: o; do
     esac
 done
 
+if [ ! -d "${MUSIC_DIR}" ]; then
+    echo "Cannot find music dir at: ${MUSIC_DIR}"
+    exit 1;
+fi
+
 if [ "$VERBOSE" -eq 1 ] 
     then
     set -x
 fi
+TEMP_DIR=`mktemp -d`
 
 MOVIE_ABSOLUTE_PATH=${WEB_ABSOLUTE_DIR}/$BASE_RELATIVE_DIR/full
-
-function createAnnotated {
-    srcfile=$1
-    frameno=$2
-#    ln -s $j ${TEMP_DIR}/`printf %06d $frameno`.jpg
-    TARGET_DATE="$(echo $i|rev|cut -c-10|rev|tr '/' '-') $(echo $j|rev|cut -c5-12|rev)"
-    PRETTY_DATE=`date -d "$TARGET_DATE" "+%Y. %b %e. %H:%M"`
-    #felirat
-    convert $j \
-	-normalize \
-	-gravity NorthWest \
-	-font ${FONT} \
-	-pointsize ${FONT_SIZE} \
-	-fill gray -annotate +10+10 "${PRETTY_DATE}" \
-	-fill gray -annotate +9+10 "${PRETTY_DATE}" \
-	-fill gray -annotate +9+11 "${PRETTY_DATE}" \
-	-fill black -annotate +11+9 "${PRETTY_DATE}" \
-	-fill white -annotate +10+10 "${PRETTY_DATE}" \
-	${TEMP_DIR}/`printf %06d $frameno`.jpg
-}
-
-    frameno=0
-    if [ $PROGRESS -eq  1 ]; then
-	dayno=0
-	days=$(ls -d ${WEB_ABSOLUTE_DIR}/$BASE_RELATIVE_DIR/????/??/??|wc -l)
-    fi
     
-    for i in ${WEB_ABSOLUTE_DIR}/$BASE_RELATIVE_DIR/????/??/??; do 
-	# use one hour of footage half an hour after sunrise
-#	for j in $(ls $i/??:?[05]:??.jpg|head -n 18|tail -n 12); do
-#	    createAnnotated $j $frameno
-#	    let "frameno = $frameno + 1"
-#	done
-	# use one hour of footage half an hour before sunset
-	for j in $(ls $i/??:?[05]:??.jpg|tail -n 24|head -n 12); do
-	    createAnnotated $j $frameno
-	    let "frameno = $frameno + 1"
+    if [ $PROGRESS -eq 1 ]; then
+	dayno=0
+	days=$(find ${WEB_ABSOLUTE_DIR}/$BASE_RELATIVE_DIR/ -type d -wholename "${WEB_ABSOLUTE_DIR}/$BASE_RELATIVE_DIR/????/??/??"|wc -l)
+	max=$(find ${WEB_ABSOLUTE_DIR}/$BASE_RELATIVE_DIR/ -type f -wholename "${WEB_ABSOLUTE_DIR}/$BASE_RELATIVE_DIR/????/??/??/*.jpg" |wc -l)
+    fi
+    let "frameNo = 0"
+    let "thumbNo = 0"
+    for day in `find ${WEB_ABSOLUTE_DIR}/$BASE_RELATIVE_DIR/ -type d -wholename "${WEB_ABSOLUTE_DIR}/$BASE_RELATIVE_DIR/????/??/??" | sort`; do
+	#grab a frame and see if conversion is needed
+	RANDOM_FRAME=`find ${day} -name ??:??:??.jpg|head -n1`
+#	RANDOM_FRAME=`ls ${day}/??:??:??.jpg|sort -R|head -n1`
+	SOURCE_DIMENSION=`identify -verbose ${RANDOM_FRAME} | awk '{ if (/Geometry:/) print gensub(/\+0\+0/, "", "g", $2) }'`
+	LINKONLY=`expr "$FRAME_SIZE" == "${SOURCE_DIMENSION}"`
+	
+	for file in `find ${day} -name ??:??:??_thumb.jpg | sort | head -n 10`; do
+		output_path=${TEMP_DIR}/`printf %06d $thumbNo`_thumb.jpg
+		ln -s $file ${output_path}
+		let "thumbNo = $thumbNo + 1"
+		if [ $PROGRESS -eq 1 ]; then
+		    echo -ne "$dayno/$days $(expr $frameNo + $thumbNo )/$max $(expr \( \( $frameNo + $thumbNo \) \* 100 \) / $max)%\r"
+		fi
 	done
-	if [ $PROGRESS -eq 1 ]; then
-	    echo -ne "$dayno/$days $(expr \( $dayno \* 100 \) / $days)%\r"
-	    let "dayno = $dayno + 1"
-	fi
+	for file in `find ${day} -name ??:??:??.jpg | sort | head -n 10`; do
+		output_path=${TEMP_DIR}/`printf %06d $frameNo`.jpg
+		if [ "$LINKONLY" == 1 ]; then
+		    ln -s $file ${output_path}
+		else
+		    # error-handle.  If the incoming picture is bad, don't pass on a bad picture
+		    CMD=`convert -scale ${FRAME_SIZE} $file ${output_path}`
+		    if [ $? != 0 ];  then
+			rm ${output_path}
+			continue
+		    fi
+		fi
+		let "frameNo = $frameNo + 1"
+		if [ $PROGRESS -eq 1 ]; then
+		    echo -ne "$dayno/$days $(expr $frameNo + $thumbNo )/$max $(expr \( \( $frameNo + $thumbNo \) \* 100 \) / $max)%\r"
+		fi
+	done
+	let "dayno = $dayno + 1"
     done
     if [ $PROGRESS -eq 1 ]; then
 	echo ""
@@ -102,7 +101,7 @@ function createAnnotated {
 # prepare the music 
 ######################################################################
 
-    DURATION=`expr $frameno / ${FRAMERATE}`
+    DURATION=`expr $frameNo / ${FRAMERATE}`
     MUSIC_PATH=`find "${MUSIC_DIR}" -name \*mp3 | sort -R | tail -n 1`
 
     # sort -R is random sort

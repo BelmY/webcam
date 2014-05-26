@@ -22,7 +22,7 @@
   </div>
 </div>
 <div id="onecolumn" class="center">
-<video controls="controls" width="<?=$resolution?"320":"640"?>" height="<?=$resolution?"240":"480"?>" autobuffer="autobuffer">
+<video controls="controls" width="100%" autobuffer="autobuffer">
   <source src="<?="${BASE_DIR}/${year}/${month}/${year}-${month}-${day}${resolution}"?>.mp4" type="video/mp4"/>
   <source src="<?="${BASE_DIR}/${year}/${month}/${year}-${month}-${day}${resolution}"?>.ogv" type='video/ogg; codecs="theora, vorbis"'/>
 </video>
